@@ -8,7 +8,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/auth.css"
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="auth-page">
     <div class="auth-container">
@@ -129,10 +131,40 @@
 
             <div class="auth-divider">ou</div>
 
-            <button class="btn-google" onclick="loginWithGoogle()">
+            <!-- Google Sign-In Button -->
+            <div id="g_id_onload"
+                 data-client_id=""
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleLogin"
+                 data-auto_prompt="false"
+                 style="display: none;">
+            </div>
+
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="outline"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left"
+                 data-width="100%">
+            </div>
+
+            <!-- Fallback para quando Google não carregar -->
+            <button class="btn-google" id="googleFallback" onclick="showGoogleSetup()" style="display: none; margin-top: 12px;">
                 <span>🔍</span>
                 <span>Entrar com Google</span>
             </button>
+
+            <div id="googleSetup" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg-dark); border-radius: 8px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                    ⚠️ Para ativar o login com Google, configure o Client ID:
+                </p>
+                <input type="text" class="form-input" id="tempClientId" placeholder="Cole seu Client ID do Google" style="margin-bottom: 8px;">
+                <button class="btn btn-sm btn-primary" onclick="setTempClientId()" style="width: 100%;">Ativar Login Google</button>
+                <a href="GOOGLE_AUTH_SETUP.md" target="_blank" style="display: block; margin-top: 8px; font-size: 12px; color: var(--primary); text-align: center;">Como obter Client ID?</a>
+            </div>
         </div>
 
         <div class="auth-footer">

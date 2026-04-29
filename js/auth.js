@@ -310,6 +310,112 @@ function logout() {
     window.location.href = 'login.html';
 }
 
+// Google Login
+// ============
+function handleGoogleLogin(response) {
+    try {
+        // Decodificar o token JWT
+        const credential = response.credential;
+        const payload = JSON.parse(atob(credential.split('.')[1]));
+        
+        // Dados do usuário Google
+        const googleUser = {
+            id: 'google_' + payload.sub,
+            name: payload.name,
+            email: payload.email,
+            picture: payload.picture,
+            provider: 'google'
+        };
+        
+        // Verificar se usuário existe no sistema
+        const users = JSON.parse(localStorage.getItem('gymmanager_users') || '[]');
+        let user = users.find(u => u.email === googleUser.email);
+        
+        if (!user) {
+            // Criar novo usuário com role padrão
+            user = {
+                id: googleUser.id,
+                name: googleUser.name,
+                email: googleUser.email,
+                avatar: googleUser.picture,
+                role: 'recepcionista', // Padrão para novos usuários Google
+                provider: 'google',
+                password: null, // Não precisa de senha para login Google
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString()
+            };
+            users.push(user);
+            localStorage.setItem('gymmanager_users', JSON.stringify(users));
+            
+            showAlert('success', `Bem-vindo, ${user.name}! Sua conta foi criada.`);
+        } else {
+            // Atualizar último login
+            user.lastLogin = new Date().toISOString();
+            if (googleUser.picture) user.avatar = googleUser.picture;
+            localStorage.setItem('gymmanager_users', JSON.stringify(users));
+            
+            showAlert('success', `Bem-vindo de volta, ${user.name}!`);
+        }
+        
+        // Criar sessão
+        createSession(user, true);
+        
+        // Redirecionar após breve delay
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Erro no login Google:', error);
+        showAlert('error', 'Erro ao processar login do Google. Tente novamente.');
+    }
+}
+
+// Configuração temporária do Client ID
+function showGoogleSetup() {
+    document.getElementById('googleSetup').style.display = 'block';
+    document.getElementById('googleFallback').style.display = 'none';
+}
+
+function setTempClientId() {
+    const clientId = document.getElementById('tempClientId').value.trim();
+    if (!clientId) {
+        showAlert('error', 'Digite um Client ID válido');
+        return;
+    }
+    
+    // Salvar no localStorage temporariamente
+    localStorage.setItem('gymmanager_google_client_id', clientId);
+    
+    // Recarregar a página para aplicar
+    window.location.reload();
+}
+
+// Verificar se há Client ID salvo ao carregar
+function initGoogleAuth() {
+    const savedClientId = localStorage.getItem('gymmanager_google_client_id');
+    const onloadDiv = document.getElementById('g_id_onload');
+    
+    if (savedClientId && onloadDiv) {
+        onloadDiv.setAttribute('data-client_id', savedClientId);
+        onloadDiv.style.display = 'block';
+    } else {
+        // Mostrar fallback se não configurado
+        const fallback = document.getElementById('googleFallback');
+        if (fallback) fallback.style.display = 'flex';
+    }
+}
+
+// Chamar na inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('g_id_onload')) {
+        initGoogleAuth();
+    }
+});
+
+// Exportar função global para o callback do Google
+window.handleGoogleLogin = handleGoogleLogin;
+
 // Verificação de autenticação
 // ===========================
 function checkAuth() {
