@@ -1,6 +1,13 @@
 // GymManager Pro - Sistema Completo de Gestão
 // ============================================
 
+// Verificar autenticação antes de tudo
+if (!window.location.pathname.includes('login.html')) {
+    if (typeof auth !== 'undefined' && !auth.isAuthenticated()) {
+        window.location.href = 'login.html';
+    }
+}
+
 // Dados iniciais (simulando banco de dados)
 const dadosIniciais = {
     alunos: [
@@ -169,6 +176,9 @@ function mudarPagina(pagina) {
             break;
         case 'relatorios':
             gerarRelatorio();
+            break;
+        case 'usuarios':
+            renderizarUsuarios();
             break;
         case 'configuracoes':
             carregarConfiguracoes();
@@ -889,6 +899,117 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
         }
     });
 });
+
+// Funções de Autenticação
+// =======================
+function handleChangePassword() {
+    const current = document.getElementById('currentPassword').value;
+    const newPass = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmNewPassword').value;
+    
+    if (newPass !== confirm) {
+        alert('As senhas não coincidem');
+        return;
+    }
+    
+    if (auth.changePassword(current, newPass)) {
+        closeModal('changePassword');
+        document.getElementById('formChangePassword').reset();
+    }
+}
+
+// Página de Usuários
+// ==================
+function renderizarUsuarios() {
+    if (!auth.hasPermission('usuarios')) {
+        showAccessDenied();
+        return;
+    }
+    
+    const content = document.getElementById('content');
+    const users = auth.getAllUsers();
+    
+    content.innerHTML = `
+        <div class="page-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1 class="page-title">Usuários</h1>
+                    <p class="page-subtitle">Gerencie os usuários do sistema</p>
+                </div>
+                <button class="btn btn-primary" onclick="openModal('usuario')" data-require-permission="usuarios.create">
+                    <span>+</span> Novo Usuário
+                </button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Lista de Usuários</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Email</th>
+                                <th>Função</th>
+                                <th>Último Acesso</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => {
+                                const roleInfo = auth.ROLES[user.role];
+                                return `
+                                    <tr>
+                                        <td>
+                                            <div style="display: flex; align-items: center; gap: 12px;">
+                                                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); 
+                                                            display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                                                    ${user.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div style="font-weight: 500;">${user.name}</div>
+                                            </div>
+                                        </td>
+                                        <td>${user.email}</td>
+                                        <td><span class="role-badge ${roleInfo?.color || ''}">${roleInfo?.name || user.role}</span></td>
+                                        <td>${user.lastLogin ? formatarDataHora(user.lastLogin) : 'Nunca'}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-secondary" onclick="editarUsuario('${user.id}')" data-require-permission="usuarios.edit">Editar</button>
+                                            <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${user.id}')" data-require-permission="usuarios.delete">Excluir</button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    auth.checkPermissions();
+}
+
+function excluirUsuario(id) {
+    if (confirm('Tem certeza que deseja excluir este usuário?')) {
+        if (auth.deleteUser(id)) {
+            renderizarUsuarios();
+        }
+    }
+}
+
+function showAccessDenied() {
+    document.getElementById('content').innerHTML = `
+        <div class="access-denied">
+            <div class="access-denied-icon">🚫</div>
+            <h2>Acesso Negado</h2>
+            <p>Você não tem permissão para acessar esta funcionalidade.</p>
+            <button class="btn btn-primary" onclick="mudarPagina('dashboard')">Voltar ao Dashboard</button>
+        </div>
+    `;
+}
 
 // Keyboard shortcuts
 // ==================
