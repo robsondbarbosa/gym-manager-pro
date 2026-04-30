@@ -395,12 +395,32 @@ function setTempClientId() {
 function initGoogleAuth() {
     const savedClientId = localStorage.getItem('gymmanager_google_client_id');
     const onloadDiv = document.getElementById('g_id_onload');
+    const signinDiv = document.querySelector('.g_id_signin');
     
-    if (savedClientId && onloadDiv) {
+    if (savedClientId && onloadDiv && savedClientId.includes('.apps.googleusercontent.com')) {
+        // Configurar Client ID
         onloadDiv.setAttribute('data-client_id', savedClientId);
         onloadDiv.style.display = 'block';
+        
+        // Recarregar o script do Google
+        if (signinDiv) {
+            signinDiv.style.display = 'block';
+        }
+        
+        // Esconder fallback
+        const fallback = document.getElementById('googleFallback');
+        if (fallback) fallback.style.display = 'none';
+        
+        // Esconder setup
+        const setup = document.getElementById('googleSetup');
+        if (setup) setup.style.display = 'none';
+        
     } else {
-        // Mostrar fallback se não configurado
+        // Esconder botão Google
+        if (onloadDiv) onloadDiv.style.display = 'none';
+        if (signinDiv) signinDiv.style.display = 'none';
+        
+        // Mostrar fallback
         const fallback = document.getElementById('googleFallback');
         if (fallback) fallback.style.display = 'flex';
     }
