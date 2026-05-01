@@ -114,7 +114,24 @@ document.addEventListener('DOMContentLoaded', () => {
 function carregarDados() {
     const dados = localStorage.getItem('gymmanager_dados');
     if (dados) {
-        appState = JSON.parse(dados);
+        try {
+            const parsed = JSON.parse(dados);
+            // Verificar se todos os campos necessários existem
+            if (!parsed.planos || parsed.planos.length === 0) {
+                parsed.planos = JSON.parse(JSON.stringify(dadosIniciais.planos));
+            }
+            if (!parsed.alunos) parsed.alunos = [];
+            if (!parsed.pagamentos) parsed.pagamentos = [];
+            if (!parsed.presencas) parsed.presencas = [];
+            if (!parsed.configuracoes) parsed.configuracoes = dadosIniciais.configuracoes;
+            
+            appState = parsed;
+            salvarDados();
+        } catch (e) {
+            console.error('Erro ao carregar dados:', e);
+            appState = JSON.parse(JSON.stringify(dadosIniciais));
+            salvarDados();
+        }
     } else {
         appState = JSON.parse(JSON.stringify(dadosIniciais));
         salvarDados();
@@ -855,12 +872,23 @@ function openModal(tipo) {
         document.getElementById('modalAlunoTitle').textContent = 'Novo Aluno';
         document.getElementById('alunoDataInicio').valueAsDate = new Date();
         
+        // Garantir que temos planos carregados
+        if (!appState.planos || appState.planos.length === 0) {
+            // Recarregar dados iniciais se necessário
+            appState.planos = JSON.parse(JSON.stringify(dadosIniciais.planos));
+            salvarDados();
+        }
+        
         // Popular select de planos
         const selectPlano = document.getElementById('alunoPlano');
-        if (selectPlano) {
-            selectPlano.innerHTML = '<option value="">Selecione...</option>' +
-                appState.planos.map(p => `<option value="${p.id}">${p.nome} - ${formatarMoeda(p.valor)}/mês</option>`
-                ).join('');
+        if (selectPlano && appState.planos && appState.planos.length > 0) {
+            let options = '<option value="">Selecione...</option>';
+            appState.planos.forEach(p => {
+                options += `<option value="${p.id}">${p.nome} - ${formatarMoeda(p.valor)}/mês</option>`;
+            });
+            selectPlano.innerHTML = options;
+        } else {
+            console.error('Nenhum plano disponível:', appState.planos);
         }
     }
 }
