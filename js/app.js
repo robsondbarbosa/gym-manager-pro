@@ -861,6 +861,29 @@ function salvarConfiguracoes() {
     alert('Configurações salvas com sucesso!');
 }
 
+// Utilitários
+// ===========
+function formatarMoeda(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valor);
+}
+
+function formatarData(data) {
+    if (!data) return '-';
+    return new Date(data).toLocaleDateString('pt-BR');
+}
+
+function formatarDataHora(data) {
+    return new Date(data).toLocaleString('pt-BR');
+}
+
+function atualizarInterface() {
+    // Atualizar título da página
+    document.title = `${appState.configuracoes.nomeAcademia} - GymManager Pro`;
+}
+
 // Modais
 // ======
 function openModal(tipo) {
@@ -895,29 +918,6 @@ function openModal(tipo) {
 
 function closeModal(tipo) {
     document.getElementById(`modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.remove('active');
-}
-
-// Utilitários
-// ===========
-function formatarMoeda(valor) {
-    return new Intl.NumberFormat('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-    }).format(valor);
-}
-
-function formatarData(data) {
-    if (!data) return '-';
-    return new Date(data).toLocaleDateString('pt-BR');
-}
-
-function formatarDataHora(data) {
-    return new Date(data).toLocaleString('pt-BR');
-}
-
-function atualizarInterface() {
-    // Atualizar título da página
-    document.title = `${appState.configuracoes.nomeAcademia} - GymManager Pro`;
 }
 
 // Event Listeners para busca
