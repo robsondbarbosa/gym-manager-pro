@@ -541,11 +541,12 @@
     <div class="modal-overlay" id="modalPlano">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title">Novo Plano</h3>
+                <h3 class="modal-title" id="modalPlanoTitle">Novo Plano</h3>
                 <button class="modal-close" onclick="closeModal('plano')">×</button>
             </div>
             <div class="modal-body">
                 <form id="formPlano">
+                    <input type="hidden" id="planoId">
                     <div class="form-group">
                         <label class="form-label">Nome do Plano *</label>
                         <input type="text" class="form-input" id="planoNome" required placeholder="Ex: Premium">

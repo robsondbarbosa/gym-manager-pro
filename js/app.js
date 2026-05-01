@@ -487,6 +487,7 @@ function renderizarPlanos() {
 }
 
 function salvarPlano() {
+    const id = document.getElementById('planoId').value;
     const planoData = {
         nome: document.getElementById('planoNome').value,
         valor: parseFloat(document.getElementById('planoValor').value),
@@ -494,12 +495,35 @@ function salvarPlano() {
         beneficios: document.getElementById('planoBeneficios').value.split('\n').filter(b => b.trim())
     };
     
-    planoData.id = Date.now().toString();
-    appState.planos.push(planoData);
+    if (id) {
+        // Editar plano existente
+        const index = appState.planos.findIndex(p => p.id === id);
+        if (index !== -1) {
+            appState.planos[index] = { ...appState.planos[index], ...planoData };
+        }
+    } else {
+        // Criar novo plano
+        planoData.id = Date.now().toString();
+        appState.planos.push(planoData);
+    }
     
     salvarDados();
     closeModal('plano');
     renderizarPlanos();
+}
+
+function editarPlano(id) {
+    const plano = appState.planos.find(p => p.id === id);
+    if (!plano) return;
+    
+    document.getElementById('planoId').value = plano.id;
+    document.getElementById('planoNome').value = plano.nome;
+    document.getElementById('planoValor').value = plano.valor;
+    document.getElementById('planoPeriodicidade').value = plano.periodicidade || 'mensal';
+    document.getElementById('planoBeneficios').value = plano.beneficios.join('\n');
+    document.getElementById('modalPlanoTitle').textContent = 'Editar Plano';
+    
+    openModal('plano');
 }
 
 function excluirPlano(id) {
@@ -930,6 +954,12 @@ function openModal(tipo, planoId = null) {
                 }
             }
         }, 100);
+    }
+    
+    if (tipo === 'plano') {
+        document.getElementById('formPlano').reset();
+        document.getElementById('planoId').value = '';
+        document.getElementById('modalPlanoTitle').textContent = 'Novo Plano';
     }
 }
 
