@@ -432,12 +432,11 @@ function editarAluno(id) {
     document.getElementById('alunoTelefone').value = aluno.telefone;
     document.getElementById('alunoEmail').value = aluno.email || '';
     document.getElementById('alunoCPF').value = aluno.cpf || '';
-    document.getElementById('alunoPlano').value = aluno.planoId;
     document.getElementById('alunoDataInicio').value = aluno.dataInicio;
     document.getElementById('alunoObservacoes').value = aluno.observacoes || '';
     
     document.getElementById('modalAlunoTitle').textContent = 'Editar Aluno';
-    openModal('aluno');
+    openModal('aluno', aluno.planoId);
 }
 
 function excluirAluno(id) {
@@ -886,7 +885,7 @@ function atualizarInterface() {
 
 // Modais
 // ======
-function openModal(tipo) {
+function openModal(tipo, planoId = null) {
     // Garantir que os dados estejam carregados antes de abrir o modal
     if (!appState.planos || appState.planos.length === 0) {
         carregarDados();
@@ -921,6 +920,11 @@ function openModal(tipo) {
                         option.textContent = `${p.nome} - ${formatarMoeda(p.valor)}/mês`;
                         selectPlano.appendChild(option);
                     });
+                    
+                    // Se for edição, selecionar o plano correto
+                    if (planoId) {
+                        selectPlano.value = planoId;
+                    }
                 } else {
                     console.error('Nenhum plano disponível no appState:', appState);
                 }
