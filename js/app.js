@@ -887,6 +887,11 @@ function atualizarInterface() {
 // Modais
 // ======
 function openModal(tipo) {
+    // Garantir que os dados estejam carregados antes de abrir o modal
+    if (!appState.planos || appState.planos.length === 0) {
+        carregarDados();
+    }
+    
     document.getElementById(`modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.add('active');
     
     if (tipo === 'aluno') {
@@ -895,24 +900,32 @@ function openModal(tipo) {
         document.getElementById('modalAlunoTitle').textContent = 'Novo Aluno';
         document.getElementById('alunoDataInicio').valueAsDate = new Date();
         
-        // Garantir que temos planos carregados
-        if (!appState.planos || appState.planos.length === 0) {
-            // Recarregar dados iniciais se necessário
-            appState.planos = JSON.parse(JSON.stringify(dadosIniciais.planos));
-            salvarDados();
-        }
-        
-        // Popular select de planos
-        const selectPlano = document.getElementById('alunoPlano');
-        if (selectPlano && appState.planos && appState.planos.length > 0) {
-            let options = '<option value="">Selecione...</option>';
-            appState.planos.forEach(p => {
-                options += `<option value="${p.id}">${p.nome} - ${formatarMoeda(p.valor)}/mês</option>`;
-            });
-            selectPlano.innerHTML = options;
-        } else {
-            console.error('Nenhum plano disponível:', appState.planos);
-        }
+        // Popular select de planos - com delay para garantir que o DOM está pronto
+        setTimeout(() => {
+            const selectPlano = document.getElementById('alunoPlano');
+            if (selectPlano) {
+                // Limpar opções existentes
+                selectPlano.innerHTML = '';
+                
+                // Adicionar opção padrão
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Selecione...';
+                selectPlano.appendChild(defaultOption);
+                
+                // Adicionar planos
+                if (appState.planos && appState.planos.length > 0) {
+                    appState.planos.forEach(p => {
+                        const option = document.createElement('option');
+                        option.value = p.id;
+                        option.textContent = `${p.nome} - ${formatarMoeda(p.valor)}/mês`;
+                        selectPlano.appendChild(option);
+                    });
+                } else {
+                    console.error('Nenhum plano disponível no appState:', appState);
+                }
+            }
+        }, 100);
     }
 }
 
