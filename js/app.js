@@ -854,6 +854,14 @@ function openModal(tipo) {
         document.getElementById('alunoId').value = '';
         document.getElementById('modalAlunoTitle').textContent = 'Novo Aluno';
         document.getElementById('alunoDataInicio').valueAsDate = new Date();
+        
+        // Popular select de planos
+        const selectPlano = document.getElementById('alunoPlano');
+        if (selectPlano) {
+            selectPlano.innerHTML = '<option value="">Selecione...</option>' +
+                appState.planos.map(p => `<option value="${p.id}">${p.nome} - ${formatarMoeda(p.valor)}/mês</option>`
+                ).join('');
+        }
     }
 }
 
