@@ -391,15 +391,14 @@ function salvarAluno() {
         cpf: document.getElementById('alunoCPF').value,
         planoId: document.getElementById('alunoPlano').value,
         dataInicio: document.getElementById('alunoDataInicio').value,
+        vencimento: parseInt(document.getElementById('alunoVencimento').value),
+        status: document.getElementById('alunoStatus').value,
         observacoes: document.getElementById('alunoObservacoes').value,
-        status: 'active',
-        presencas: 0
     };
     
-    // Calcular próximo pagamento
+    // Calcular próximo pagamento baseado no vencimento
     const dataInicio = new Date(alunoData.dataInicio);
-    const proximoPag = new Date(dataInicio);
-    proximoPag.setMonth(proximoPag.getMonth() + 1);
+    const proximoPag = new Date(dataInicio.getFullYear(), dataInicio.getMonth() + 1, alunoData.vencimento);
     alunoData.proximoPagamento = proximoPag.toISOString().split('T')[0];
     
     if (id) {
@@ -411,6 +410,8 @@ function salvarAluno() {
     } else {
         // Novo
         alunoData.id = Date.now().toString();
+        alunoData.status = alunoData.status || 'active';
+        alunoData.presencas = 0;
         appState.alunos.push(alunoData);
         
         // Criar pagamento pendente
@@ -433,6 +434,8 @@ function editarAluno(id) {
     document.getElementById('alunoEmail').value = aluno.email || '';
     document.getElementById('alunoCPF').value = aluno.cpf || '';
     document.getElementById('alunoDataInicio').value = aluno.dataInicio;
+    document.getElementById('alunoVencimento').value = aluno.vencimento || '15';
+    document.getElementById('alunoStatus').value = aluno.status || 'active';
     document.getElementById('alunoObservacoes').value = aluno.observacoes || '';
     
     document.getElementById('modalAlunoTitle').textContent = 'Editar Aluno';
@@ -922,6 +925,8 @@ function openModal(tipo, planoId = null) {
         document.getElementById('alunoId').value = '';
         document.getElementById('modalAlunoTitle').textContent = 'Novo Aluno';
         document.getElementById('alunoDataInicio').valueAsDate = new Date();
+        document.getElementById('alunoVencimento').value = '15';
+        document.getElementById('alunoStatus').value = 'active';
         
         // Popular select de planos - com delay para garantir que o DOM está pronto
         setTimeout(() => {
