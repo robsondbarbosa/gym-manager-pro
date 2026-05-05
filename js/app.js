@@ -910,6 +910,36 @@ function atualizarInterface() {
     document.title = `${appState.configuracoes.nomeAcademia} - GymManager Pro`;
 }
 
+// Funções de formatação de CPF
+// =============================
+function apenasNumeros(event) {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Permitir apenas números (0-9)
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+        return false;
+    }
+    return true;
+}
+
+function formatarCPF(input) {
+    // Remove tudo que não é número
+    let valor = input.value.replace(/\D/g, '');
+    
+    // Limita a 11 dígitos
+    valor = valor.substring(0, 11);
+    
+    // Aplica a máscara
+    if (valor.length > 9) {
+        valor = valor.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    } else if (valor.length > 6) {
+        valor = valor.replace(/^(\d{3})(\d{3})(\d{3})$/, '$1.$2.$3');
+    } else if (valor.length > 3) {
+        valor = valor.replace(/^(\d{3})(\d{3})$/, '$1.$2');
+    }
+    
+    input.value = valor;
+}
+
 // Modais
 // ======
 function openModal(tipo, planoId = null) {
