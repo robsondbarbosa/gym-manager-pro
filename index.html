@@ -446,6 +446,43 @@
                     </div>
                 </div>
 
+                <!-- Usuários (Apenas Admin) -->
+                <div id="page-usuarios" class="page" style="display: none;">
+                    <div class="page-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h1 class="page-title">Usuários</h1>
+                                <p class="page-subtitle">Gerencie os usuários do sistema</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="openModal('usuario')" data-require-permission="admin">
+                                <span>+</span> Novo Usuário
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Lista de Usuários</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuário</th>
+                                            <th>Email</th>
+                                            <th>Função</th>
+                                            <th>Último Acesso</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaUsuarios"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Configurações -->
                 <div id="page-configuracoes" class="page" style="display: none;">
                     <div class="page-header">
@@ -595,6 +632,47 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('plano')">Cancelar</button>
                 <button class="btn btn-primary" onclick="salvarPlano()">Salvar Plano</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Usuário (Apenas Admin) -->
+    <div class="modal-overlay" id="modalUsuario">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalUsuarioTitle">Novo Usuário</h3>
+                <button class="modal-close" onclick="closeModal('usuario')">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="formUsuario">
+                    <input type="hidden" id="usuarioId">
+                    <div class="form-group">
+                        <label class="form-label">Nome Completo *</label>
+                        <input type="text" class="form-input" id="usuarioNome" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-input" id="usuarioEmail" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Função *</label>
+                            <select class="form-select" id="usuarioRole" required>
+                                <option value="recepcionista">Recepcionista</option>
+                                <option value="instrutor">Instrutor</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Senha *</label>
+                            <input type="password" class="form-input" id="usuarioPassword" required minlength="6">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('usuario')">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarUsuario()">Salvar Usuário</button>
             </div>
         </div>
     </div>

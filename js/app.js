@@ -635,6 +635,10 @@ function renderizarPagamentos() {
                     ${pag.status === 'pending' ? `
                         <button class="btn btn-sm btn-success" onclick="registrarPagamento('${pag.id}')">Registrar</button>
                     ` : '-'}
+                    ${auth.hasPermission('admin') ? `
+                        <button class="btn btn-sm btn-secondary" onclick="editarPagamento('${pag.id}')">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="excluirPagamento('${pag.id}')">Excluir</button>
+                    ` : ''}
                 </td>
             </tr>
         `;
@@ -663,6 +667,175 @@ function registrarPagamento(pagamentoId) {
     salvarDados();
     renderizarPagamentos();
     atualizarDashboard();
+}
+
+// Funções de Administração de Pagamentos (Apenas Admin)
+// ======================================================
+function editarPagamento(pagamentoId) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para editar pagamentos.');
+        return;
+    }
+    
+    const pagamento = appState.pagamentos.find(p => p.id === pagamentoId);
+    if (!pagamento) return;
+    
+    const aluno = appState.alunos.find(a => a.id === pagamento.alunoId);
+    const plano = appState.planos.find(p => p.id === pagamento.planoId);
+    
+    // Criar modal de edição dinamicamente
+    const novoValor = prompt(`Editar pagamento de ${aluno ? aluno.nome : 'Desconhecido'}\n\nValor atual: ${formatarMoeda(pagamento.valor)}\n\nDigite o novo valor (use ponto para centavos):`, pagamento.valor);
+    
+    if (novoValor !== null && !isNaN(parseFloat(novoValor))) {
+        pagamento.valor = parseFloat(novoValor);
+        salvarDados();
+        renderizarPagamentos();
+        alert('Pagamento atualizado com sucesso!');
+    }
+}
+
+function excluirPagamento(pagamentoId) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para excluir pagamentos.');
+        return;
+    }
+    
+    const pagamento = appState.pagamentos.find(p => p.id === pagamentoId);
+    if (!pagamento) return;
+    
+    const aluno = appState.alunos.find(a => a.id === pagamento.alunoId);
+    
+    if (confirm(`Tem certeza que deseja excluir o pagamento de ${aluno ? aluno.nome : 'Desconhecido'}?\n\nValor: ${formatarMoeda(pagamento.valor)}\nVencimento: ${formatarData(pagamento.vencimento)}\n\nEsta ação não pode ser desfeita!`)) {
+        appState.pagamentos = appState.pagamentos.filter(p => p.id !== pagamentoId);
+        salvarDados();
+        renderizarPagamentos();
+        atualizarDashboard();
+        alert('Pagamento excluído com sucesso!');
+    }
+}
+
+// Gerenciamento de Usuários (Apenas Admin)
+// ==========================================
+function renderizarUsuarios() {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para acessar esta página.');
+        mudarPagina('dashboard');
+        return;
+    }
+    
+    const tbody = document.getElementById('tabelaUsuarios');
+    const users = auth.getAllUsers();
+    
+    tbody.innerHTML = users.map(user => {
+        const roleInfo = auth.ROLES[user.role];
+        return `
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); 
+                                    display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style="font-weight: 500;">${user.name}</div>
+                    </div>
+                </td>
+                <td>${user.email}</td>
+                <td><span class="role-badge ${roleInfo?.color || ''}">${roleInfo?.name || user.role}</span></td>
+                <td>${user.lastLogin ? formatarDataHora(user.lastLogin) : 'Nunca'}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="editarUsuario('${user.id}')">Editar</button>
+                    <button class="btn btn-sm btn-warning" onclick="resetarSenhaUsuario('${user.id}')">Resetar Senha</button>
+                    <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${user.id}')">Excluir</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function salvarUsuario() {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para criar usuários.');
+        return;
+    }
+    
+    const id = document.getElementById('usuarioId').value;
+    const userData = {
+        name: document.getElementById('usuarioNome').value,
+        email: document.getElementById('usuarioEmail').value,
+        role: document.getElementById('usuarioRole').value,
+        password: document.getElementById('usuarioPassword').value
+    };
+    
+    if (id) {
+        // Editar usuário existente
+        if (auth.updateUser(id, { name: userData.name, email: userData.email, role: userData.role })) {
+            alert('Usuário atualizado com sucesso!');
+        }
+    } else {
+        // Criar novo usuário
+        if (auth.createUser(userData)) {
+            alert('Usuário criado com sucesso!');
+        }
+    }
+    
+    closeModal('usuario');
+    renderizarUsuarios();
+}
+
+function editarUsuario(id) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para editar usuários.');
+        return;
+    }
+    
+    const user = auth.getAllUsers().find(u => u.id === id);
+    if (!user) return;
+    
+    document.getElementById('usuarioId').value = user.id;
+    document.getElementById('usuarioNome').value = user.name;
+    document.getElementById('usuarioEmail').value = user.email;
+    document.getElementById('usuarioRole').value = user.role;
+    document.getElementById('usuarioPassword').required = false;
+    document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuário';
+    
+    openModal('usuario');
+}
+
+function resetarSenhaUsuario(id) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para resetar senhas.');
+        return;
+    }
+    
+    const user = auth.getAllUsers().find(u => u.id === id);
+    if (!user) return;
+    
+    const novaSenha = prompt(`Resetar senha de ${user.name}\n\nDigite a nova senha (mínimo 6 caracteres):`);
+    
+    if (novaSenha && novaSenha.length >= 6) {
+        if (auth.updateUser(id, { password: novaSenha })) {
+            alert(`Senha de ${user.name} resetada com sucesso!`);
+        }
+    } else if (novaSenha) {
+        alert('A senha deve ter pelo menos 6 caracteres.');
+    }
+}
+
+function excluirUsuario(id) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para excluir usuários.');
+        return;
+    }
+    
+    const user = auth.getAllUsers().find(u => u.id === id);
+    if (!user) return;
+    
+    if (confirm(`Tem certeza que deseja excluir o usuário ${user.name}?\n\nEmail: ${user.email}\nFunção: ${auth.ROLES[user.role]?.name || user.role}\n\nEsta ação não pode ser desfeita!`)) {
+        if (auth.deleteUser(id)) {
+            alert('Usuário excluído com sucesso!');
+            renderizarUsuarios();
+        }
+    }
 }
 
 // Check-in QR Code
