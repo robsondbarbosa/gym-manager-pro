@@ -428,6 +428,11 @@ function editarAluno(id) {
     const aluno = appState.alunos.find(a => a.id === id);
     if (!aluno) return;
     
+    // Abrir modal primeiro (sem resetar)
+    document.getElementById('modalAluno').classList.add('active');
+    document.getElementById('modalAlunoTitle').textContent = `Editar Aluno: ${aluno.nome}`;
+    
+    // Preencher dados do aluno
     document.getElementById('alunoId').value = aluno.id;
     document.getElementById('alunoNome').value = aluno.nome;
     document.getElementById('alunoTelefone').value = aluno.telefone;
@@ -438,8 +443,28 @@ function editarAluno(id) {
     document.getElementById('alunoStatus').value = aluno.status || 'active';
     document.getElementById('alunoObservacoes').value = aluno.observacoes || '';
     
-    document.getElementById('modalAlunoTitle').textContent = 'Editar Aluno';
-    openModal('aluno', aluno.planoId);
+    // Popular select de planos e selecionar o correto
+    setTimeout(() => {
+        const selectPlano = document.getElementById('alunoPlano');
+        if (selectPlano) {
+            selectPlano.innerHTML = '';
+            
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Selecione...';
+            selectPlano.appendChild(defaultOption);
+            
+            if (appState.planos && appState.planos.length > 0) {
+                appState.planos.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.nome} - ${formatarMoeda(p.valor)}/mês`;
+                    selectPlano.appendChild(option);
+                });
+                selectPlano.value = aluno.planoId;
+            }
+        }
+    }, 100);
 }
 
 function excluirAluno(id) {
