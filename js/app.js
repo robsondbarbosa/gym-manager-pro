@@ -367,6 +367,7 @@ function renderizarAlunos() {
                 <td>${aluno.presencas || 0}</td>
                 <td>
                     <button class="btn btn-sm btn-secondary" onclick="editarAluno('${aluno.id}')">Editar</button>
+                    <button class="btn btn-sm btn-success" onclick="notificacoesWhatsApp.enviarManual('${aluno.id}', 'vencimento')" title="Enviar lembrete de vencimento">💬</button>
                     <button class="btn btn-sm btn-danger" onclick="excluirAluno('${aluno.id}')">Excluir</button>
                 </td>
             </tr>
@@ -389,6 +390,7 @@ function salvarAluno() {
         telefone: document.getElementById('alunoTelefone').value,
         email: document.getElementById('alunoEmail').value,
         cpf: document.getElementById('alunoCPF').value,
+        dataNascimento: document.getElementById('alunoNascimento').value,
         planoId: document.getElementById('alunoPlano').value,
         dataInicio: document.getElementById('alunoDataInicio').value,
         vencimento: parseInt(document.getElementById('alunoVencimento').value),
@@ -438,6 +440,7 @@ function editarAluno(id) {
     document.getElementById('alunoTelefone').value = aluno.telefone;
     document.getElementById('alunoEmail').value = aluno.email || '';
     document.getElementById('alunoCPF').value = aluno.cpf || '';
+    document.getElementById('alunoNascimento').value = aluno.dataNascimento || '';
     document.getElementById('alunoDataInicio').value = aluno.dataInicio;
     document.getElementById('alunoVencimento').value = aluno.vencimento || '15';
     document.getElementById('alunoStatus').value = aluno.status || 'active';
