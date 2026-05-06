@@ -679,7 +679,38 @@ document.addEventListener('click', (e) => {
     if (menu && !menu.contains(e.target)) {
         menu.classList.remove('open');
     }
+    
+    const headerMenu = document.getElementById('headerUserMenu');
+    const headerWrapper = document.querySelector('.user-menu-header-wrapper');
+    if (headerMenu && headerWrapper && !headerWrapper.contains(e.target)) {
+        headerMenu.classList.remove('open');
+    }
 });
+
+// Toggle User Menu no Header
+function toggleUserMenuHeader() {
+    const menu = document.getElementById('headerUserMenu');
+    if (menu) {
+        menu.classList.toggle('open');
+        
+        // Atualizar informações do usuário
+        const session = getSession();
+        if (session) {
+            const nameEl = document.getElementById('headerMenuUserName');
+            const roleEl = document.getElementById('headerMenuUserRole');
+            if (nameEl) nameEl.textContent = session.name;
+            if (roleEl) roleEl.textContent = ROLES[session.role]?.name || session.role;
+        }
+    }
+}
+
+// Fechar menu do header
+function closeUserMenuHeader() {
+    const menu = document.getElementById('headerUserMenu');
+    if (menu) {
+        menu.classList.remove('open');
+    }
+}
 
 // Exportar funções para uso global
 window.auth = {
@@ -695,3 +726,8 @@ window.auth = {
     changePassword,
     ROLES
 };
+
+// Exportar funções do menu
+window.toggleUserMenu = toggleUserMenu;
+window.toggleUserMenuHeader = toggleUserMenuHeader;
+window.closeUserMenuHeader = closeUserMenuHeader;
