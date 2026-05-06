@@ -508,8 +508,8 @@ function renderizarPlanos() {
                         `).join('')}
                     </ul>
                     <div style="display: flex; gap: 8px;">
-                        <button class="btn btn-sm btn-secondary" style="flex: 1;" onclick="editarPlano('${plano.id}')">Editar</button>
-                        <button class="btn btn-sm btn-danger" onclick="excluirPlano('${plano.id}')">Excluir</button>
+                        <button class="btn btn-sm btn-secondary" style="flex: 1;" onclick="editarPlano('${plano.id}')" data-require-permission="planos.edit">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="excluirPlano('${plano.id}')" data-require-permission="planos.delete">Excluir</button>
                     </div>
                 </div>
             </div>
