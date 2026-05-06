@@ -29,6 +29,16 @@ const DEFAULT_USERS = [
         avatar: null,
         createdAt: new Date().toISOString(),
         lastLogin: null
+    },
+    {
+        id: '3',
+        name: 'Instrutor Teste',
+        email: 'instrutor@gymmanager.com',
+        password: 'instrutor123',
+        role: 'instrutor',
+        avatar: null,
+        createdAt: new Date().toISOString(),
+        lastLogin: null
     }
 ];
 
@@ -86,8 +96,24 @@ function initLoginPage() {
     }
 
     // Inicializar usuários padrão se não existirem
-    if (!localStorage.getItem('gymmanager_users')) {
-        localStorage.setItem('gymmanager_users', JSON.stringify(DEFAULT_USERS));
+    initDefaultUsers();
+}
+
+// Garantir que todos os usuários padrão existam
+function initDefaultUsers() {
+    const existingUsers = JSON.parse(localStorage.getItem('gymmanager_users') || '[]');
+    let updated = false;
+    
+    DEFAULT_USERS.forEach(defaultUser => {
+        const exists = existingUsers.find(u => u.email === defaultUser.email);
+        if (!exists) {
+            existingUsers.push(defaultUser);
+            updated = true;
+        }
+    });
+    
+    if (updated) {
+        localStorage.setItem('gymmanager_users', JSON.stringify(existingUsers));
     }
 }
 
