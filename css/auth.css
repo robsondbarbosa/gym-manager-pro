@@ -332,6 +332,7 @@
 /* User Menu */
 .user-menu {
     position: relative;
+    z-index: 1000;
 }
 
 .user-menu-trigger {
@@ -364,7 +365,7 @@
     visibility: hidden;
     transform: translateY(-10px);
     transition: all 0.2s;
-    z-index: 100;
+    z-index: 10001;
 }
 
 .user-menu.open .user-menu-dropdown {

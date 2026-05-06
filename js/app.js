@@ -114,7 +114,24 @@ document.addEventListener('DOMContentLoaded', () => {
 function carregarDados() {
     const dados = localStorage.getItem('gymmanager_dados');
     if (dados) {
-        appState = JSON.parse(dados);
+        try {
+            const parsed = JSON.parse(dados);
+            // Verificar se todos os campos necessários existem
+            if (!parsed.planos || parsed.planos.length === 0) {
+                parsed.planos = JSON.parse(JSON.stringify(dadosIniciais.planos));
+            }
+            if (!parsed.alunos) parsed.alunos = [];
+            if (!parsed.pagamentos) parsed.pagamentos = [];
+            if (!parsed.presencas) parsed.presencas = [];
+            if (!parsed.configuracoes) parsed.configuracoes = dadosIniciais.configuracoes;
+            
+            appState = parsed;
+            salvarDados();
+        } catch (e) {
+            console.error('Erro ao carregar dados:', e);
+            appState = JSON.parse(JSON.stringify(dadosIniciais));
+            salvarDados();
+        }
     } else {
         appState = JSON.parse(JSON.stringify(dadosIniciais));
         salvarDados();
@@ -350,6 +367,7 @@ function renderizarAlunos() {
                 <td>${aluno.presencas || 0}</td>
                 <td>
                     <button class="btn btn-sm btn-secondary" onclick="editarAluno('${aluno.id}')">Editar</button>
+                    <button class="btn btn-sm btn-success" onclick="notificacoesWhatsApp.enviarManual('${aluno.id}', 'vencimento')" title="Enviar lembrete de vencimento">💬</button>
                     <button class="btn btn-sm btn-danger" onclick="excluirAluno('${aluno.id}')">Excluir</button>
                 </td>
             </tr>
@@ -372,17 +390,17 @@ function salvarAluno() {
         telefone: document.getElementById('alunoTelefone').value,
         email: document.getElementById('alunoEmail').value,
         cpf: document.getElementById('alunoCPF').value,
+        dataNascimento: document.getElementById('alunoNascimento').value,
         planoId: document.getElementById('alunoPlano').value,
         dataInicio: document.getElementById('alunoDataInicio').value,
+        vencimento: parseInt(document.getElementById('alunoVencimento').value),
+        status: document.getElementById('alunoStatus').value,
         observacoes: document.getElementById('alunoObservacoes').value,
-        status: 'active',
-        presencas: 0
     };
     
-    // Calcular próximo pagamento
+    // Calcular próximo pagamento baseado no vencimento
     const dataInicio = new Date(alunoData.dataInicio);
-    const proximoPag = new Date(dataInicio);
-    proximoPag.setMonth(proximoPag.getMonth() + 1);
+    const proximoPag = new Date(dataInicio.getFullYear(), dataInicio.getMonth() + 1, alunoData.vencimento);
     alunoData.proximoPagamento = proximoPag.toISOString().split('T')[0];
     
     if (id) {
@@ -394,6 +412,8 @@ function salvarAluno() {
     } else {
         // Novo
         alunoData.id = Date.now().toString();
+        alunoData.status = alunoData.status || 'active';
+        alunoData.presencas = 0;
         appState.alunos.push(alunoData);
         
         // Criar pagamento pendente
@@ -410,17 +430,44 @@ function editarAluno(id) {
     const aluno = appState.alunos.find(a => a.id === id);
     if (!aluno) return;
     
+    // Abrir modal primeiro (sem resetar)
+    document.getElementById('modalAluno').classList.add('active');
+    document.getElementById('modalAlunoTitle').textContent = `Editar Aluno: ${aluno.nome}`;
+    
+    // Preencher dados do aluno
     document.getElementById('alunoId').value = aluno.id;
     document.getElementById('alunoNome').value = aluno.nome;
     document.getElementById('alunoTelefone').value = aluno.telefone;
     document.getElementById('alunoEmail').value = aluno.email || '';
     document.getElementById('alunoCPF').value = aluno.cpf || '';
-    document.getElementById('alunoPlano').value = aluno.planoId;
+    document.getElementById('alunoNascimento').value = aluno.dataNascimento || '';
     document.getElementById('alunoDataInicio').value = aluno.dataInicio;
+    document.getElementById('alunoVencimento').value = aluno.vencimento || '15';
+    document.getElementById('alunoStatus').value = aluno.status || 'active';
     document.getElementById('alunoObservacoes').value = aluno.observacoes || '';
     
-    document.getElementById('modalAlunoTitle').textContent = 'Editar Aluno';
-    openModal('aluno');
+    // Popular select de planos e selecionar o correto
+    setTimeout(() => {
+        const selectPlano = document.getElementById('alunoPlano');
+        if (selectPlano) {
+            selectPlano.innerHTML = '';
+            
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Selecione...';
+            selectPlano.appendChild(defaultOption);
+            
+            if (appState.planos && appState.planos.length > 0) {
+                appState.planos.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = `${p.nome} - ${formatarMoeda(p.valor)}/mês`;
+                    selectPlano.appendChild(option);
+                });
+                selectPlano.value = aluno.planoId;
+            }
+        }
+    }, 100);
 }
 
 function excluirAluno(id) {
@@ -471,6 +518,7 @@ function renderizarPlanos() {
 }
 
 function salvarPlano() {
+    const id = document.getElementById('planoId').value;
     const planoData = {
         nome: document.getElementById('planoNome').value,
         valor: parseFloat(document.getElementById('planoValor').value),
@@ -478,12 +526,35 @@ function salvarPlano() {
         beneficios: document.getElementById('planoBeneficios').value.split('\n').filter(b => b.trim())
     };
     
-    planoData.id = Date.now().toString();
-    appState.planos.push(planoData);
+    if (id) {
+        // Editar plano existente
+        const index = appState.planos.findIndex(p => p.id === id);
+        if (index !== -1) {
+            appState.planos[index] = { ...appState.planos[index], ...planoData };
+        }
+    } else {
+        // Criar novo plano
+        planoData.id = Date.now().toString();
+        appState.planos.push(planoData);
+    }
     
     salvarDados();
     closeModal('plano');
     renderizarPlanos();
+}
+
+function editarPlano(id) {
+    const plano = appState.planos.find(p => p.id === id);
+    if (!plano) return;
+    
+    document.getElementById('planoId').value = plano.id;
+    document.getElementById('planoNome').value = plano.nome;
+    document.getElementById('planoValor').value = plano.valor;
+    document.getElementById('planoPeriodicidade').value = plano.periodicidade || 'mensal';
+    document.getElementById('planoBeneficios').value = plano.beneficios.join('\n');
+    document.getElementById('modalPlanoTitle').textContent = 'Editar Plano';
+    
+    openModal('plano');
 }
 
 function excluirPlano(id) {
@@ -564,6 +635,10 @@ function renderizarPagamentos() {
                     ${pag.status === 'pending' ? `
                         <button class="btn btn-sm btn-success" onclick="registrarPagamento('${pag.id}')">Registrar</button>
                     ` : '-'}
+                    ${auth.hasPermission('admin') ? `
+                        <button class="btn btn-sm btn-secondary" onclick="editarPagamento('${pag.id}')">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="excluirPagamento('${pag.id}')">Excluir</button>
+                    ` : ''}
                 </td>
             </tr>
         `;
@@ -592,6 +667,175 @@ function registrarPagamento(pagamentoId) {
     salvarDados();
     renderizarPagamentos();
     atualizarDashboard();
+}
+
+// Funções de Administração de Pagamentos (Apenas Admin)
+// ======================================================
+function editarPagamento(pagamentoId) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para editar pagamentos.');
+        return;
+    }
+    
+    const pagamento = appState.pagamentos.find(p => p.id === pagamentoId);
+    if (!pagamento) return;
+    
+    const aluno = appState.alunos.find(a => a.id === pagamento.alunoId);
+    const plano = appState.planos.find(p => p.id === pagamento.planoId);
+    
+    // Criar modal de edição dinamicamente
+    const novoValor = prompt(`Editar pagamento de ${aluno ? aluno.nome : 'Desconhecido'}\n\nValor atual: ${formatarMoeda(pagamento.valor)}\n\nDigite o novo valor (use ponto para centavos):`, pagamento.valor);
+    
+    if (novoValor !== null && !isNaN(parseFloat(novoValor))) {
+        pagamento.valor = parseFloat(novoValor);
+        salvarDados();
+        renderizarPagamentos();
+        alert('Pagamento atualizado com sucesso!');
+    }
+}
+
+function excluirPagamento(pagamentoId) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para excluir pagamentos.');
+        return;
+    }
+    
+    const pagamento = appState.pagamentos.find(p => p.id === pagamentoId);
+    if (!pagamento) return;
+    
+    const aluno = appState.alunos.find(a => a.id === pagamento.alunoId);
+    
+    if (confirm(`Tem certeza que deseja excluir o pagamento de ${aluno ? aluno.nome : 'Desconhecido'}?\n\nValor: ${formatarMoeda(pagamento.valor)}\nVencimento: ${formatarData(pagamento.vencimento)}\n\nEsta ação não pode ser desfeita!`)) {
+        appState.pagamentos = appState.pagamentos.filter(p => p.id !== pagamentoId);
+        salvarDados();
+        renderizarPagamentos();
+        atualizarDashboard();
+        alert('Pagamento excluído com sucesso!');
+    }
+}
+
+// Gerenciamento de Usuários (Apenas Admin)
+// ==========================================
+function renderizarUsuarios() {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para acessar esta página.');
+        mudarPagina('dashboard');
+        return;
+    }
+    
+    const tbody = document.getElementById('tabelaUsuarios');
+    const users = auth.getAllUsers();
+    
+    tbody.innerHTML = users.map(user => {
+        const roleInfo = auth.ROLES[user.role];
+        return `
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); 
+                                    display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style="font-weight: 500;">${user.name}</div>
+                    </div>
+                </td>
+                <td>${user.email}</td>
+                <td><span class="role-badge ${roleInfo?.color || ''}">${roleInfo?.name || user.role}</span></td>
+                <td>${user.lastLogin ? formatarDataHora(user.lastLogin) : 'Nunca'}</td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="editarUsuario('${user.id}')">Editar</button>
+                    <button class="btn btn-sm btn-warning" onclick="resetarSenhaUsuario('${user.id}')">Resetar Senha</button>
+                    <button class="btn btn-sm btn-danger" onclick="excluirUsuario('${user.id}')">Excluir</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function salvarUsuario() {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para criar usuários.');
+        return;
+    }
+    
+    const id = document.getElementById('usuarioId').value;
+    const userData = {
+        name: document.getElementById('usuarioNome').value,
+        email: document.getElementById('usuarioEmail').value,
+        role: document.getElementById('usuarioRole').value,
+        password: document.getElementById('usuarioPassword').value
+    };
+    
+    if (id) {
+        // Editar usuário existente
+        if (auth.updateUser(id, { name: userData.name, email: userData.email, role: userData.role })) {
+            alert('Usuário atualizado com sucesso!');
+        }
+    } else {
+        // Criar novo usuário
+        if (auth.createUser(userData)) {
+            alert('Usuário criado com sucesso!');
+        }
+    }
+    
+    closeModal('usuario');
+    renderizarUsuarios();
+}
+
+function editarUsuario(id) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para editar usuários.');
+        return;
+    }
+    
+    const user = auth.getAllUsers().find(u => u.id === id);
+    if (!user) return;
+    
+    document.getElementById('usuarioId').value = user.id;
+    document.getElementById('usuarioNome').value = user.name;
+    document.getElementById('usuarioEmail').value = user.email;
+    document.getElementById('usuarioRole').value = user.role;
+    document.getElementById('usuarioPassword').required = false;
+    document.getElementById('modalUsuarioTitle').textContent = 'Editar Usuário';
+    
+    openModal('usuario');
+}
+
+function resetarSenhaUsuario(id) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para resetar senhas.');
+        return;
+    }
+    
+    const user = auth.getAllUsers().find(u => u.id === id);
+    if (!user) return;
+    
+    const novaSenha = prompt(`Resetar senha de ${user.name}\n\nDigite a nova senha (mínimo 6 caracteres):`);
+    
+    if (novaSenha && novaSenha.length >= 6) {
+        if (auth.updateUser(id, { password: novaSenha })) {
+            alert(`Senha de ${user.name} resetada com sucesso!`);
+        }
+    } else if (novaSenha) {
+        alert('A senha deve ter pelo menos 6 caracteres.');
+    }
+}
+
+function excluirUsuario(id) {
+    if (!auth.hasPermission('admin')) {
+        alert('Você não tem permissão para excluir usuários.');
+        return;
+    }
+    
+    const user = auth.getAllUsers().find(u => u.id === id);
+    if (!user) return;
+    
+    if (confirm(`Tem certeza que deseja excluir o usuário ${user.name}?\n\nEmail: ${user.email}\nFunção: ${auth.ROLES[user.role]?.name || user.role}\n\nEsta ação não pode ser desfeita!`)) {
+        if (auth.deleteUser(id)) {
+            alert('Usuário excluído com sucesso!');
+            renderizarUsuarios();
+        }
+    }
 }
 
 // Check-in QR Code
@@ -844,23 +1088,6 @@ function salvarConfiguracoes() {
     alert('Configurações salvas com sucesso!');
 }
 
-// Modais
-// ======
-function openModal(tipo) {
-    document.getElementById(`modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.add('active');
-    
-    if (tipo === 'aluno') {
-        document.getElementById('formAluno').reset();
-        document.getElementById('alunoId').value = '';
-        document.getElementById('modalAlunoTitle').textContent = 'Novo Aluno';
-        document.getElementById('alunoDataInicio').valueAsDate = new Date();
-    }
-}
-
-function closeModal(tipo) {
-    document.getElementById(`modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.remove('active');
-}
-
 // Utilitários
 // ===========
 function formatarMoeda(valor) {
@@ -882,6 +1109,98 @@ function formatarDataHora(data) {
 function atualizarInterface() {
     // Atualizar título da página
     document.title = `${appState.configuracoes.nomeAcademia} - GymManager Pro`;
+}
+
+// Funções de formatação de CPF
+// =============================
+function apenasNumeros(event) {
+    const charCode = event.which ? event.which : event.keyCode;
+    // Permitir apenas números (0-9)
+    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
+        return false;
+    }
+    return true;
+}
+
+function formatarCPF(input) {
+    // Remove tudo que não é número
+    let valor = input.value.replace(/\D/g, '');
+    
+    // Limita a 11 dígitos
+    valor = valor.substring(0, 11);
+    
+    // Aplica a máscara
+    if (valor.length > 9) {
+        valor = valor.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+    } else if (valor.length > 6) {
+        valor = valor.replace(/^(\d{3})(\d{3})(\d{3})$/, '$1.$2.$3');
+    } else if (valor.length > 3) {
+        valor = valor.replace(/^(\d{3})(\d{3})$/, '$1.$2');
+    }
+    
+    input.value = valor;
+}
+
+// Modais
+// ======
+function openModal(tipo, planoId = null) {
+    // Garantir que os dados estejam carregados antes de abrir o modal
+    if (!appState.planos || appState.planos.length === 0) {
+        carregarDados();
+    }
+    
+    document.getElementById(`modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.add('active');
+    
+    if (tipo === 'aluno') {
+        document.getElementById('formAluno').reset();
+        document.getElementById('alunoId').value = '';
+        document.getElementById('modalAlunoTitle').textContent = 'Novo Aluno';
+        document.getElementById('alunoDataInicio').valueAsDate = new Date();
+        document.getElementById('alunoVencimento').value = '15';
+        document.getElementById('alunoStatus').value = 'active';
+        
+        // Popular select de planos - com delay para garantir que o DOM está pronto
+        setTimeout(() => {
+            const selectPlano = document.getElementById('alunoPlano');
+            if (selectPlano) {
+                // Limpar opções existentes
+                selectPlano.innerHTML = '';
+                
+                // Adicionar opção padrão
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Selecione...';
+                selectPlano.appendChild(defaultOption);
+                
+                // Adicionar planos
+                if (appState.planos && appState.planos.length > 0) {
+                    appState.planos.forEach(p => {
+                        const option = document.createElement('option');
+                        option.value = p.id;
+                        option.textContent = `${p.nome} - ${formatarMoeda(p.valor)}/mês`;
+                        selectPlano.appendChild(option);
+                    });
+                    
+                    // Se for edição, selecionar o plano correto
+                    if (planoId) {
+                        selectPlano.value = planoId;
+                    }
+                } else {
+                    console.error('Nenhum plano disponível no appState:', appState);
+                }
+            }
+        }, 100);
+    }
+    
+    if (tipo === 'plano') {
+        document.getElementById('formPlano').reset();
+        document.getElementById('planoId').value = '';
+        document.getElementById('modalPlanoTitle').textContent = 'Novo Plano';
+    }
+}
+
+function closeModal(tipo) {
+    document.getElementById(`modal${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.remove('active');
 }
 
 // Event Listeners para busca
