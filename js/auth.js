@@ -55,7 +55,8 @@ const ROLES = {
         name: 'Instrutor',
         permissions: [
             'dashboard',
-            'alunos.view',
+            'alunos.view', 'alunos.create',
+            'planos.view',
             'presenca.view',
             'checkin'
         ],

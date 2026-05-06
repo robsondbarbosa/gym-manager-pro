@@ -366,9 +366,9 @@ function renderizarAlunos() {
                 <td><span class="status ${statusClass}">${statusText}</span></td>
                 <td>${aluno.presencas || 0}</td>
                 <td>
-                    <button class="btn btn-sm btn-secondary" onclick="editarAluno('${aluno.id}')">Editar</button>
+                    <button class="btn btn-sm btn-secondary" onclick="editarAluno('${aluno.id}')" data-require-permission="alunos.edit">Editar</button>
                     <button class="btn btn-sm btn-success" onclick="notificacoesWhatsApp.enviarManual('${aluno.id}', 'vencimento')" title="Enviar lembrete de vencimento">💬</button>
-                    <button class="btn btn-sm btn-danger" onclick="excluirAluno('${aluno.id}')">Excluir</button>
+                    <button class="btn btn-sm btn-danger" onclick="excluirAluno('${aluno.id}')" data-require-permission="alunos.delete">Excluir</button>
                 </td>
             </tr>
         `;
